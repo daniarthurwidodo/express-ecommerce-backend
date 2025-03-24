@@ -21,6 +21,8 @@ class User extends Model implements UserAttributes{
   public isActive!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  public verificationToken!: string | null;
+  public verificationTokenExpires!: Date | null;
 }
 
 User.init({
@@ -57,6 +59,14 @@ User.init({
   authProvider: {
     type: DataTypes.ENUM('local', 'google'),
     defaultValue: 'local'
+  },
+  verificationToken: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  verificationTokenExpires: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   sequelize,
