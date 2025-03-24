@@ -2,8 +2,16 @@ import { Model, DataTypes } from 'sequelize';
 import sequelize from '../../../config/database';
 import { ULID } from '../../../utils/ulid';
 
-class User extends Model {
-  public id!: string;
+interface UserAttributes {
+    id: number;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }
+
+class User extends Model implements UserAttributes{
+  public id!: number;
   public email!: string;
   public firstName!: string;
   public lastName!: string;
@@ -45,6 +53,10 @@ User.init({
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  authProvider: {
+    type: DataTypes.ENUM('local', 'google'),
+    defaultValue: 'local'
   }
 }, {
   sequelize,
