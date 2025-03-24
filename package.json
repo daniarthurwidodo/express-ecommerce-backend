@@ -4,6 +4,7 @@
   "description": "E-commerce backend with Express.js and TypeScript",
   "main": "dist/server.js",
   "dependencies": {
+    "@faker-js/faker": "^9.6.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "class-transformer": "^0.4.0",
@@ -20,7 +21,8 @@
     "sequelize": "^6.31.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.2.45"
+    "typeorm": "^0.2.45",
+    "ulid": "^2.4.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
@@ -44,7 +46,11 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "seed": "ts-node src/database/seed.ts",
+    "db:reset": "ts-node src/database/reset.ts",
+    "db:seed": "ts-node src/database/seed.ts",
+    "db:refresh": "npm run db:reset && npm run db:seed"
   },
   "author": "",
   "license": "ISC"

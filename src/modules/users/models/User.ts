@@ -1,5 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
-import sequelize from '../config/database';
+import sequelize from '../../../config/database';
+import { ULID } from '../../../utils/ulid';
 
 class User extends Model {
   public id!: string;
@@ -15,11 +16,7 @@ class User extends Model {
 }
 
 User.init({
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
+  id: ULID,
   email: {
     type: DataTypes.STRING,
     unique: true,
