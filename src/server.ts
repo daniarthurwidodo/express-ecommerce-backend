@@ -1,65 +1,25 @@
-import express, { Express } from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import session from 'express-session';
-import passport from 'passport';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsDoc from 'swagger-jsdoc';
+import dotenv from 'dotenv';
+import { Application } from './app/Application';
+import { MiddlewareConfig } from './config/MiddlewareConfig';
+import { SessionConfig } from './config/SessionConfig';
+import { SwaggerConfig } from './config/SwaggerConfig';
 
-// Initialize express app
-const app: Express = express();
-const port = process.env.PORT || 3000;
+// Load environment variables
+dotenv.config();
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+const app = new Application([
+  new MiddlewareConfig(),
+  new SessionConfig(),
+  new SwaggerConfig(port)
+]).initialize();
 
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Swagger configuration
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'E-Commerce API',
-      version: '1.0.0',
-      description: 'Express E-Commerce API Documentation'
-    },
-    servers: [
-      {
-        url: `http://localhost:${port}`
-      }
-    ]
-  },
-  apis: ['./src/modules/*/routes/*.ts']
-};
-
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-// Health check route
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-// Start server
-app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
-  console.log(`📚 Swagger documentation available at http://localhost:${port}/api-docs`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+    console.log(`📚 Swagger documentation available at http://localhost:${port}/api-docs`);
+  });
+}
 
 export default app;
