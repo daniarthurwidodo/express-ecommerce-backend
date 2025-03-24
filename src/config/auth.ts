@@ -29,20 +29,31 @@ passport.use(new LocalStrategy(
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: "/auth/google/callback"
+    callbackURL: "http://localhost:3000/auth/google/callback",
+    scope: ['profile', 'email']
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      const existingUser = await User.findOne({
-        where: { email: profile.emails?.[0].value }
+      if (!profile.emails?.[0].value) {
+        return done(new Error('No email found from Google profile'));
+      }
+
+      const existingUser: any = await User.findOne({
+        where: { 
+          email: profile.emails[0].value,
+        }
       });
 
       if (existingUser) {
+        // Update auth provider if user exists but registered with email
+        if (existingUser.authProvider === 'local') {
+          await existingUser.update({ authProvider: 'google' });
+        }
         return done(null, existingUser);
       }
 
       const newUser = await User.create({
-        email: profile.emails?.[0].value,
+        email: profile.emails[0].value,
         firstName: profile.name?.givenName || '',
         lastName: profile.name?.familyName || '',
         password: await bcrypt.hash(Math.random().toString(36), 10),
@@ -52,7 +63,7 @@ passport.use(new GoogleStrategy({
 
       return done(null, newUser);
     } catch (error) {
-      return done(error);
+      return done(error as Error);
     }
   }
 ));

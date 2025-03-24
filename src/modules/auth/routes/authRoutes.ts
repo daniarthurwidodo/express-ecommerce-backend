@@ -4,7 +4,7 @@ import { AuthController } from '../controllers/AuthController';
 import { validateRegister, validateLogin } from '../middleware/authValidation';
 
 const router = Router();
-const authController = new AuthController();
+const authController: any = new AuthController();
 
 /**
  * @swagger
@@ -70,13 +70,26 @@ router.post('/login', validateLogin, passport.authenticate('local'), authControl
  *     tags: [Auth]
  *     description: Login with Google
  */
-router.get('/google', 
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+router.get('/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  authController.login
+  passport.authenticate('google', { 
+    failureRedirect: '/auth/google/failure',
+    session: false
+  }),
+  authController.googleCallback
 );
+
+router.get('/google/failure', (req, res) => {
+  res.status(401).json({
+    status: 'error',
+    message: 'Google authentication failed'
+  });
+});
 
 export default router;

@@ -81,4 +81,41 @@ export class AuthController {
       });
     }
   }
+
+  async googleCallback(req: Request, res: Response) {
+    try {
+      const user = req.user as any;
+      const token = jwt.sign(
+        { userId: user.id },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      // For web clients, redirect with token
+      if (req.query.web) {
+        return res.redirect(`/auth/success?token=${token}`);
+      }
+
+      // For API clients, return JSON
+      res.json({
+        status: 'success',
+        data: {
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            authProvider: user.authProvider
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: 'Error processing Google authentication',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  }
 }
