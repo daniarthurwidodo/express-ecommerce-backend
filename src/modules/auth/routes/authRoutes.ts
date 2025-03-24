@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import passport from 'passport';
 import { AuthController } from '../controllers/AuthController';
+import { validateRegister, validateLogin } from '../middleware/authValidation';
 
 const router = Router();
 const authController = new AuthController();
@@ -25,14 +26,18 @@ const authController = new AuthController();
  *             properties:
  *               email:
  *                 type: string
+ *                 format: email
  *               password:
  *                 type: string
+ *                 minLength: 6
  *               firstName:
  *                 type: string
+ *                 minLength: 2
  *               lastName:
  *                 type: string
+ *                 minLength: 2
  */
-router.post('/register', authController.register);
+router.post('/register', validateRegister, authController.register);
 
 /**
  * @swagger
@@ -40,8 +45,23 @@ router.post('/register', authController.register);
  *   post:
  *     tags: [Auth]
  *     description: Login with email and password
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
  */
-router.post('/login', passport.authenticate('local'), authController.login);
+router.post('/login', validateLogin, passport.authenticate('local'), authController.login);
 
 /**
  * @swagger
