@@ -11,3 +11,4 @@
 [ ] add payment gateway (midtrans)
 [ ] add elk stack for logging, monitoring and search suggestion
 [ ] change to event driven with kafka -> microservices
+[ ] add redis for caching
