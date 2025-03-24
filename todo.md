@@ -3,7 +3,7 @@
 [x] test auth login/register
 [x] test oauth google
 [ ] test email verification
-[ ] integrate database (postgres)
+[x] integrate database (postgres)
 [ ] add admin to crud products
 [ ] add customer to make purchase
 [ ] add customer to add to wishlist
