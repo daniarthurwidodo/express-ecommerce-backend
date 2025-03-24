@@ -2,8 +2,6 @@ import { faker } from '@faker-js/faker';
 import  User  from '../../modules/users/models/User';
 import bcrypt from 'bcryptjs';
 
-const roles = ['admin', 'customer', 'guest'];
-
 async function seedUsers(count: number = 1000) {
   try {
     const users = [];
@@ -29,7 +27,7 @@ async function seedUsers(count: number = 1000) {
         firstName,
         lastName,
         password: await bcrypt.hash('password123', 10),
-        role: roles[Math.floor(Math.random() * roles.length)],
+        role: 'customer',
         isEmailVerified: faker.datatype.boolean(),
         isActive: faker.datatype.boolean(0.9) // 90% chance of being active
       });
