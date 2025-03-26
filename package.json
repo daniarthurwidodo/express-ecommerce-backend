@@ -27,7 +27,9 @@
     "typeorm": "^0.2.45",
     "ulid": "^2.4.0",
     "@kafkajs/confluent-schema-registry": "^3.3.0",
-    "kafkajs": "^2.2.4"
+    "kafkajs": "^2.2.4",
+    "winston": "^3.11.0",
+    "winston-logstash": "^3.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",
