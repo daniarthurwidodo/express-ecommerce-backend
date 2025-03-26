@@ -1,7 +1,23 @@
+import { Request, Response } from 'express';
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../../../config/database';
 import { ULID } from '../../../utils/ulid';
 import { KafkaService, eventTopics } from '../../../utils/kafka';
+
+interface CreateProductRequest extends Partial<Product> {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  stockQuantity: number;
+  images?: string[];
+  metadata?: Record<string, any>;
+}
+
+interface UpdateStockRequest {
+  productId: string;
+  quantity: number;
+}
 
 class Product extends Model {
   public id!: string;
@@ -84,7 +100,8 @@ export class ProductController {
 
   async createProduct(req: Request, res: Response) {
     try {
-      const product = await Product.create(req.body);
+      const productData: any = req.body as CreateProductRequest;
+      const product = await Product.create(productData);
 
       await this.kafkaService.emit(eventTopics.PRODUCT_CREATED, {
         productId: product.id,
@@ -92,17 +109,39 @@ export class ProductController {
         timestamp: new Date()
       });
 
-      res.status(201).json({ /* ... */ });
+      res.status(201).json({
+        success: true,
+        data: product
+      });
     } catch (error) {
-      // ... error handling ...
+      console.error('Error creating product:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create product'
+      });
     }
   }
 
   async updateStock(req: Request, res: Response) {
     try {
-      const { productId, quantity } = req.body;
+      const { productId, quantity } = req.body as UpdateStockRequest;
+
+      if (quantity < 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Quantity must be a positive number'
+        });
+      }
+
       const product = await Product.findByPk(productId);
       
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          error: 'Product not found'
+        });
+      }
+
       await product.update({ stockQuantity: quantity });
 
       await this.kafkaService.emit(eventTopics.STOCK_UPDATED, {
@@ -111,9 +150,19 @@ export class ProductController {
         timestamp: new Date()
       });
 
-      res.json({ /* ... */ });
+      res.json({
+        success: true,
+        data: {
+          productId: product.id,
+          stockQuantity: quantity
+        }
+      });
     } catch (error) {
-      // ... error handling ...
+      console.error('Error updating stock:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update stock'
+      });
     }
   }
 }

@@ -10,19 +10,16 @@ interface UserAttributes {
     lastName: string;
   }
 
-class User extends Model implements UserAttributes{
+class User extends Model implements UserAttributes {
   public id!: number;
   public email!: string;
   public firstName!: string;
   public lastName!: string;
   public password!: string;
   public role!: 'admin' | 'customer' | 'guest';
-  public isEmailVerified!: boolean;
   public isActive!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
-  public verificationToken!: string | null;
-  public verificationTokenExpires!: Date | null;
 }
 
 User.init({
@@ -48,10 +45,6 @@ User.init({
     type: DataTypes.ENUM('admin', 'customer', 'guest'),
     defaultValue: 'customer'
   },
-  isEmailVerified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -59,14 +52,6 @@ User.init({
   authProvider: {
     type: DataTypes.ENUM('local', 'google'),
     defaultValue: 'local'
-  },
-  verificationToken: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  verificationTokenExpires: {
-    type: DataTypes.DATE,
-    allowNull: true
   }
 }, {
   sequelize,

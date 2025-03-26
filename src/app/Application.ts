@@ -2,7 +2,6 @@ import express, { Express } from 'express';
 import { IAppConfig } from '../interfaces/IAppConfig';
 import authRoutes from '../modules/auth/routes/authRoutes';
 import passport from '../config/auth';
-import { startEmailConsumer } from '../events/consumers/emailConsumer';
 
 export class Application {
   private readonly app: Express;
@@ -18,7 +17,6 @@ export class Application {
     this.configs.forEach(config => config.configure(this.app));
 
     // Initialize event consumers
-    await startEmailConsumer();
 
     // Initialize passport
     this.app.use(passport.initialize());

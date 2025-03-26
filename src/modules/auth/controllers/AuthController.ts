@@ -1,23 +1,39 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { ulid } from 'ulid';
 import User from '../../users/models/User';
-import { EmailService } from '../services/EmailService';
-import { Op } from 'sequelize';
 import { KafkaService, eventTopics } from '../../../utils/kafka';
 
 export class AuthController {
-  private kafkaService: KafkaService;
+  private static instance: AuthController;
+  private kafkaService?: KafkaService;
 
   constructor() {
-    this.kafkaService = new KafkaService();
-    this.kafkaService.connect();
+    if (!AuthController.instance) {
+      // Initialize Kafka service
+      try {
+        this.kafkaService = new KafkaService();
+        this.kafkaService.connect();
+      } catch (error) {
+        console.warn('Kafka service not initialized:', error);
+        this.kafkaService = undefined;
+      }
+      AuthController.instance = this;
+    }
+    return AuthController.instance;
   }
 
   async register(req: Request, res: Response) {
     try {
       const { email, password, firstName, lastName } = req.body;
+
+      // Add validation for required fields
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'All fields are required: email, password, firstName, lastName'
+        });
+      }
 
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
@@ -28,33 +44,32 @@ export class AuthController {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const verificationToken = ulid();
-      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const user = await User.create({
         email,
         password: hashedPassword,
         firstName,
         lastName,
-        authProvider: 'local',
-        verificationToken,
-        verificationTokenExpires,
-        isEmailVerified: false
+        authProvider: 'local'
       });
-
-      // Send verification email
-      await EmailService.sendVerificationEmail(email, verificationToken);
-
-      // Emit user created event
-      await this.kafkaService.emit(eventTopics.USER_CREATED, {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date()
-      });
+      console.log(this.kafkaService);
+      // Try to emit Kafka event if service is available
+      if (this.kafkaService) {
+        try {
+          await this.kafkaService.emit(eventTopics.USER_CREATED, {
+            userId: user.id,
+            email: user.email,
+            timestamp: new Date()
+          });
+        } catch (kafkaError) {
+          console.warn('Failed to emit Kafka event:', kafkaError);
+          // Continue with registration even if Kafka fails
+        }
+      }
 
       res.status(201).json({
         status: 'success',
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: 'Registration successful',
         data: {
           user: {
             id: user.id,
@@ -65,56 +80,11 @@ export class AuthController {
         }
       });
     } catch (error) {
+      console.error('Registration error:', error); // Add detailed error logging
       res.status(500).json({
         status: 'error',
         message: 'Error registering user',
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-      });
-    }
-  }
-
-  async verifyEmail(req: Request, res: Response) {
-    try {
-      const { token } = req.query;
-
-      const user = await User.findOne({
-        where: {
-          verificationToken: token,
-          verificationTokenExpires: {
-            [Op.gt]: new Date()
-          }
-        }
-      });
-
-      if (!user) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Invalid or expired verification token'
-        });
-      }
-
-      await user.update({
-        isEmailVerified: true,
-        verificationToken: null,
-        verificationTokenExpires: null
-      });
-
-      // Emit user verified event
-      await this.kafkaService.emit(eventTopics.USER_VERIFIED, {
-        userId: user.id,
-        email: user.email,
-        timestamp: new Date()
-      });
-
-      res.json({
-        status: 'success',
-        message: 'Email verified successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Error verifying email',
-        error: process.env.NODE_ENV === 'development' ? error : undefined
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   }
