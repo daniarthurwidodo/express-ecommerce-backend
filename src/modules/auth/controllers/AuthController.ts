@@ -5,8 +5,16 @@ import { ulid } from 'ulid';
 import User from '../../users/models/User';
 import { EmailService } from '../services/EmailService';
 import { Op } from 'sequelize';
+import { KafkaService, eventTopics } from '../../../utils/kafka';
 
 export class AuthController {
+  private kafkaService: KafkaService;
+
+  constructor() {
+    this.kafkaService = new KafkaService();
+    this.kafkaService.connect();
+  }
+
   async register(req: Request, res: Response) {
     try {
       const { email, password, firstName, lastName } = req.body;
@@ -36,6 +44,13 @@ export class AuthController {
 
       // Send verification email
       await EmailService.sendVerificationEmail(email, verificationToken);
+
+      // Emit user created event
+      await this.kafkaService.emit(eventTopics.USER_CREATED, {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date()
+      });
 
       res.status(201).json({
         status: 'success',
@@ -82,6 +97,13 @@ export class AuthController {
         isEmailVerified: true,
         verificationToken: null,
         verificationTokenExpires: null
+      });
+
+      // Emit user verified event
+      await this.kafkaService.emit(eventTopics.USER_VERIFIED, {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date()
       });
 
       res.json({

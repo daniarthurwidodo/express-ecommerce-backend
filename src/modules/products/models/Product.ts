@@ -1,6 +1,7 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../../../config/database';
 import { ULID } from '../../../utils/ulid';
+import { KafkaService, eventTopics } from '../../../utils/kafka';
 
 class Product extends Model {
   public id!: string;
@@ -72,3 +73,47 @@ Product.init({
 });
 
 export default Product;
+
+export class ProductController {
+  private kafkaService: KafkaService;
+
+  constructor() {
+    this.kafkaService = new KafkaService();
+    this.kafkaService.connect();
+  }
+
+  async createProduct(req: Request, res: Response) {
+    try {
+      const product = await Product.create(req.body);
+
+      await this.kafkaService.emit(eventTopics.PRODUCT_CREATED, {
+        productId: product.id,
+        name: product.name,
+        timestamp: new Date()
+      });
+
+      res.status(201).json({ /* ... */ });
+    } catch (error) {
+      // ... error handling ...
+    }
+  }
+
+  async updateStock(req: Request, res: Response) {
+    try {
+      const { productId, quantity } = req.body;
+      const product = await Product.findByPk(productId);
+      
+      await product.update({ stockQuantity: quantity });
+
+      await this.kafkaService.emit(eventTopics.STOCK_UPDATED, {
+        productId: product.id,
+        newQuantity: quantity,
+        timestamp: new Date()
+      });
+
+      res.json({ /* ... */ });
+    } catch (error) {
+      // ... error handling ...
+    }
+  }
+}
