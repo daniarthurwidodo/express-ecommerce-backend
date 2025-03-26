@@ -1,6 +1,12 @@
 import { transporter } from '../../../config/email';
 
 export class EmailService {
+  static sendVerificationConfirmation(email: any) {
+      throw new Error('Method not implemented.');
+  }
+  static sendWelcomeEmail(email: any) {
+      throw new Error('Method not implemented.');
+  }
   static async sendVerificationEmail(email: string, token: string): Promise<void> {
     const verificationUrl = `${process.env.APP_URL}/auth/verify-email?token=${token}`;
 

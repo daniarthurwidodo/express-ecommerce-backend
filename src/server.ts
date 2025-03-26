@@ -10,14 +10,17 @@ dotenv.config();
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-const app = new Application([
+const application = new Application([
   new MiddlewareConfig(),
   new SessionConfig(),
   new SwaggerConfig(port)
-]).initialize();
+]);
+
+let app: any;
 
 // Database connection and server start
 async function startServer() {
+  app = await application.initialize();
   try {
     await sequelize.authenticate();
     console.log('📦 Database connection established successfully');
@@ -26,7 +29,7 @@ async function startServer() {
     await sequelize.sync({ alter: true });
     console.log('🔄 Database models synchronized');
 
-    app.listen(port, () => {
+    await app.listen(port, () => {
       console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
       console.log(`📚 Swagger documentation available at http://localhost:${port}/api-docs`);
     });
